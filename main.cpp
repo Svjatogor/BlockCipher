@@ -6,44 +6,23 @@
 
 QBitArray ConvertByteArrayToBitArray(QByteArray byteArray);
 QByteArray ConvertBitArrayToByteArray(QBitArray bitArray);
-QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys);
-QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys);
+QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys);
+QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys);
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
     QTextStream out(stdout);
     qsrand(QTime::currentTime().second());
 
-    char d, b;
-    d = 1;
-    b = 2;
-    char c = d ^ b;
-
     QString text = "T";
-    QList<QBitArray> keys;
+    QList<QByteArray> keys;
     QByteArray byteText = text.toLocal8Bit();
-    QBitArray bitText = ConvertByteArrayToBitArray(byteText);
-    QByteArray byteTest = ConvertBitArrayToByteArray(bitText);
-    QString decodeText = QString::fromLocal8Bit(byteTest);
-
 
     // encryption
-    QBitArray bitCipher = Encryption(bitText, keys);
-
-    QBitArray buffer(bitText.size());
-    for (int i = 0; i < bitText.size(); i++) {
-        buffer[i] = bitCipher[i];
-    }
-    byteTest = ConvertBitArrayToByteArray(buffer);
-    decodeText = QString::fromLocal8Bit(byteTest);
+    QByteArray byteCipher = Encryption(byteText, keys);
 
     // decoding
-    QBitArray bitDecodeText = Decoding(bitCipher, keys);
-    for (int i = 0; i < bitText.size(); i++) {
-        buffer[i] = bitDecodeText[i];
-    }
-    byteTest = ConvertBitArrayToByteArray(buffer);
-    decodeText = QString::fromLocal8Bit(byteTest);
+    QByteArray decodeByteText = Decoding(byteCipher, keys);
 
     return a.exec();
 }
@@ -85,63 +64,61 @@ QByteArray ConvertBitArrayToByteArray(QBitArray bitArray) {
 
 /**
  * @brief Encryption - Implements block encryption
- * @param text - source
+ * @param bytesText - source
  * @param keyList - keys for decryption
  * @return - ciphertext
  */
-QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
-    int sizeText = bitsText.size();
-    // text add empty bits for block
-    QBitArray fullBitText;
-    int fullSize;
+QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys) {
+
+    int sizeText = bytesText.size();
     // add missing bits
-    if (sizeText % 64 != 0) {
-       int newSize = sizeText + (64 - sizeText % 64);
-       QBitArray buffer(newSize);
-       // copy bits
-       for (int i = 0; i < sizeText; i++) {
-           buffer[i] = bitsText[i];
-       }
-       // add missing bits
-       for (int i = sizeText; i < newSize - 1; i++) {
-           buffer[i] = 0;
-       }
-       buffer[newSize - 1] = 1;
-       fullBitText = buffer;
-       fullSize = newSize;
-   }
+    if (sizeText % 8 != 0) {
+        int newSize = sizeText + (8 - sizeText % 8);
+        for (int i = 0; i < newSize - sizeText; i++) {
+            bytesText.append('z');
+        }
+    }
+    sizeText = bytesText.size();
 
-   // generate 64-bits key
-   QBitArray bitKey = QBitArray(64);
-   int key;
-   for (int i = 0; i < 64; i++) {
-       // generate 16 bit half key
-       key = qrand() % 99;
-       bitKey[i] = key < 50 ? true : false;
-   }
+    // generate 64-bits key
+    int keySize = 64;
+    QByteArray key;
+    int k;
+    for (int i = 0; i < keySize / 8; i++) {
+        // generate 1 byte for key
+        k = qrand() % 255;
+        key[i] = k;
+    }
 
-   // encryption
-   QBitArray encryptionText(fullSize);
-   QBitArray block(64);
-   for (int i = 0; i < fullSize; i+=64) {
-       // add key in list
-       keys.append(bitKey);
+    // encryption
+    QByteArray encryptionText;
+    QByteArray encrBlock;
+    QByteArray block;
+    for (int i = 0; i < sizeText;) {
+        // add key in list
+        keys.append(key);
 
-       // generate block
-       for (int j = 0; j < block.size(); j++) {
-           block[j] = fullBitText[i + j];
-       }
+        // generate block
+        block = bytesText.mid(i, keySize);
 
-       // encryption block
-       QBitArray encrBlock = block ^ bitKey;
-       bitKey = encrBlock;
-       // add block in encrypting text
-       for (int j = 0; j < block.size(); j++) {
-           encryptionText[i + j] = block[j];
-       }
-   }
+        encrBlock = QByteArray();
+        // encryption block
+        for (int j = 0; j < block.size(); j++) {
+            encrBlock.append(block[j] ^ key[j]);
+        }
+        // next key it is block
+        key = encrBlock;
 
-   return encryptionText;
+        // add block in encrypting text
+        foreach (char byte, encrBlock) {
+            encryptionText.append(byte);
+        }
+
+        // next block
+        i += 8;
+    }
+
+    return encryptionText;
 }
 
 /**
@@ -150,28 +127,34 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
  * @param keys - keys to encryption
  * @return decoding text
  */
-QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys) {
-    QBitArray block(64); // block
-    QBitArray decoderText(bitCipher.size());
-    QBitArray key;
-    QListIterator<QBitArray> keysIter(keys);
-    QBitArray text(bitCipher.size());
+QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys) {
+    int blockSize = 64;
+    QByteArray decoderText();
+    QByteArray key;
+    QListIterator<QByteArray> keysIter(keys);
+    QByteArray block;
     // decoding
-    for (int i = 0; i < bitCipher.size(); i+=64) {
+    for (int i = 0; i < bytesCipher.size();) {
 
-        // get block
-        for (int j = 0; j < block.size(); j++) {
-            block[j] = bitCipher[i + j];
-        }
         // get key
         key = keysIter.next();
 
+        // get block
+        block = bytesCipher.mid(i, key.size());
+
         // xor
-        QBitArray decBlock = block ^ key;
-        // add block in decoding text
+        QByteArray decoderBlock;
         for (int j = 0; j < block.size(); j++) {
-            text[i + j] = decBlock[j];
+            decoderBlock[j] = block[j] ^ key[j];
         }
+
+        // add block in decoding text
+        foreach (byte, decoderBlock) {
+            decoderText.append(byte);
+        }
+
+        // next block
+        i += 8;
     }
-    return text;
+    return decoderText;
 }
