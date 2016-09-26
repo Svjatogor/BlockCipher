@@ -29,6 +29,14 @@ int main(int argc, char *argv[]) {
     QString cipher = QString::fromLocal8Bit(
                 ConvertBitArrayToByteArray(buffer)
                 );
+    // decoding
+    QBitArray bitDecodeText = Decoding(bitCipher, keys);
+    for (int i = 0; i < bitText.size(); i++) {
+        buffer[i] = bitDecodeText[i];
+    }
+    QString decodeText = QString::fromLocal8Bit(
+                ConvertBitArrayToByteArray(buffer)
+                );
 
     return a.exec();
 }
@@ -137,7 +145,7 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
  * @brief Decoding
  * @param bitCipher - raw data encrypting input text
  * @param keys - keys to encryption
- * @return deco
+ * @return decoding text
  */
 QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys) {
     QBitArray block(64); // block
