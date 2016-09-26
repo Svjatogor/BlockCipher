@@ -4,8 +4,6 @@
 #include <QByteArray>
 #include <QTime>
 
-QBitArray ConvertByteArrayToBitArray(QByteArray byteArray);
-QByteArray ConvertBitArrayToByteArray(QBitArray bitArray);
 QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys);
 QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys);
 
@@ -14,7 +12,7 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
     qsrand(QTime::currentTime().second());
 
-    QString text = "T";
+    QString text = "Timofey the best programmer";
     QList<QByteArray> keys;
     QByteArray byteText = text.toLocal8Bit();
 
@@ -25,41 +23,6 @@ int main(int argc, char *argv[]) {
     QByteArray decodeByteText = Decoding(byteCipher, keys);
 
     return a.exec();
-}
-
-/**
- * @brief ConvertByteArrayToBitArray - Convert from QByteArray to BitArray
- * @param byteArray
- * @return
- */
-QBitArray ConvertByteArrayToBitArray(QByteArray byteArray) {
-    QBitArray bitArray(byteArray.count() * 8);
-
-    // convert from QByteArray to BitArray
-    for(int i = 0; i < byteArray.count(); ++i) {
-        for (int b = 0; b < 8; b++) {
-            bitArray.setBit( i*8+b, byteArray.at(i)&(1<<(7-b)) );
-        }
-    }
-
-    return bitArray;
-}
-
-/**
- * @brief ConvertBitArrayToByteArray - convert from QBitArray to QByteArray
- * @param bitArray
- * @return
- */
-QByteArray ConvertBitArrayToByteArray(QBitArray bitArray) {
-    QByteArray byteArray;
-    byteArray.resize(bitArray.size()/8);
-
-    // convert from QBitArray to QByteArray
-    for (int b = 0; b < bitArray.count(); ++b) {
-        byteArray[b/8] = ( byteArray.at(b/8) | ((bitArray[b]?1:0)<<(7-(b%8))) );
-    }
-
-    return byteArray;
 }
 
 /**
@@ -99,7 +62,7 @@ QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys) {
         keys.append(key);
 
         // generate block
-        block = bytesText.mid(i, keySize);
+        block = bytesText.mid(i, keySize / 8);
 
         encrBlock = QByteArray();
         // encryption block
@@ -129,7 +92,7 @@ QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys) {
  */
 QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys) {
     int blockSize = 64;
-    QByteArray decoderText();
+    QByteArray decoderText;
     QByteArray key;
     QListIterator<QByteArray> keysIter(keys);
     QByteArray block;
@@ -149,7 +112,7 @@ QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys) {
         }
 
         // add block in decoding text
-        foreach (byte, decoderBlock) {
+        foreach (char byte, decoderBlock) {
             decoderText.append(byte);
         }
 
