@@ -13,49 +13,32 @@ int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
     QTextStream out(stdout);
     qsrand(QTime::currentTime().second());
+
     QString text = "T";
     QList<QBitArray> keys;
     QByteArray byteText = text.toLocal8Bit();
     QBitArray bitText = ConvertByteArrayToBitArray(byteText);
-
-    QBitArray testKey = QBitArray(bitText.size());
-    for (int i = 0; i < testKey.size(); i++) {
-        // generate 16 bit half key
-        int key = qrand() % 100;
-        if (key < 50)
-            testKey[i] = true;
-        else
-            testKey[i] = false;
-    }
+    QByteArray byteTest = ConvertBitArrayToByteArray(bitText);
+    QString decodeText = QString::fromLocal8Bit(byteTest);
 
 
-    QBitArray testCipher = bitText ^ testKey;
-
-    QBitArray testBitDecodeText = testCipher ^ testKey;
-
-    QString decText = QString::fromLocal8Bit(
-                ConvertBitArrayToByteArray(testBitDecodeText)
-                );
-
-    // Encryption
+    // encryption
     QBitArray bitCipher = Encryption(bitText, keys);
 
-    // remove unnecessary bits
     QBitArray buffer(bitText.size());
     for (int i = 0; i < bitText.size(); i++) {
         buffer[i] = bitCipher[i];
     }
-    QString cipher = QString::fromLocal8Bit(
-                ConvertBitArrayToByteArray(buffer)
-                );
+    byteTest = ConvertBitArrayToByteArray(buffer);
+    decodeText = QString::fromLocal8Bit(byteTest);
+
     // decoding
     QBitArray bitDecodeText = Decoding(bitCipher, keys);
     for (int i = 0; i < bitText.size(); i++) {
         buffer[i] = bitDecodeText[i];
     }
-    QString decodeText = QString::fromLocal8Bit(
-                ConvertBitArrayToByteArray(buffer)
-                );
+    byteTest = ConvertBitArrayToByteArray(buffer);
+    decodeText = QString::fromLocal8Bit(byteTest);
 
     return a.exec();
 }
@@ -141,7 +124,7 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
 
        // generate block
        for (int j = 0; j < block.size(); j++) {
-           block[i] = fullBitText[i + j];
+           block[j] = fullBitText[i + j];
        }
 
        // encryption block
