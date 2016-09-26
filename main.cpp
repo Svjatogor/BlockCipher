@@ -4,13 +4,25 @@
 #include <QByteArray>
 #include <QTime>
 
-QBitArray ConvertByteArrayToBitArray(QByteArray &byteArray);
-QByteArray ConvertBitArrayToByteArray(QBitArray &bitArray);
-QBitArray Encryption(QBitArray &bitsText, QList<QBitArray> keyList);
+QBitArray ConvertByteArrayToBitArray(QByteArray byteArray);
+QByteArray ConvertBitArrayToByteArray(QBitArray bitArray);
+QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList);
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
     QTextStream out(stdout);
+    qsrand(QTime::currentTime().second());
+    QString text = "Test";
+    QList<QBitArray> keys;
+    QByteArray byteText = text.toLocal8Bit();
+    QBitArray bitText = ConvertByteArrayToBitArray(byteText);
+
+    QByteArray convertbitText = ConvertBitArrayToByteArray(bitText);
+    QString convertText = QString::fromLocal8Bit(convertbitText);
+
+    QBitArray bitCipher = Encryption(bitText, keys);
+    QByteArray byteCipher = ConvertBitArrayToByteArray(bitCipher);
+    QString ciphet = QString::fromLocal8Bit(byteCipher);
 
     return a.exec();
 }
@@ -20,7 +32,7 @@ int main(int argc, char *argv[]) {
  * @param byteArray
  * @return
  */
-QBitArray ConvertByteArrayToBitArray(QByteArray &byteArray) {
+QBitArray ConvertByteArrayToBitArray(QByteArray byteArray) {
     QBitArray bitArray(byteArray.count() * 8);
 
     // convert from QByteArray to BitArray
@@ -38,7 +50,7 @@ QBitArray ConvertByteArrayToBitArray(QByteArray &byteArray) {
  * @param bitArray
  * @return
  */
-QByteArray ConvertBitArrayToByteArray(QBitArray &bitArray) {
+QByteArray ConvertBitArrayToByteArray(QBitArray bitArray) {
     QByteArray byteArray;
     byteArray.resize(bitArray.size()/8);
 
@@ -56,7 +68,7 @@ QByteArray ConvertBitArrayToByteArray(QBitArray &bitArray) {
  * @param keyList - keys for decryption
  * @return - ciphertext
  */
-QBitArray Encryption(QBitArray &bitsText, QList<QBitArray> keyList) {
+QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList) {
    int sizeText = bitsText.size();
 
    // add missing bits
@@ -77,9 +89,17 @@ QBitArray Encryption(QBitArray &bitsText, QList<QBitArray> keyList) {
    }
 
    // generate 64-bits key
-   int key = qrand() % 127;
-   QByteArray byteKey = QByteArray::number(key);
-   QBitArray bitKey = ConvertByteArrayToBitArray(byteKey);
+   QBitArray bitKey = QBitArray(64);
+   int key;
+   for (int i = 0; i < 64; i+=16) {
+       // generate 16 bit half key
+       key = qrand() % 99;
+       QBitArray bitBuffer = ConvertByteArrayToBitArray(QByteArray::number(key));
+       // copy to key
+       for (int j = 0; j < 16; j++) {
+           bitKey[i + j] = bitBuffer[j];
+       }
+   }
 
    // encryption
    QBitArray encryptionText(sizeText);
