@@ -6,7 +6,8 @@
 
 QBitArray ConvertByteArrayToBitArray(QByteArray byteArray);
 QByteArray ConvertBitArrayToByteArray(QBitArray bitArray);
-QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList);
+QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys);
+QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys);
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
@@ -17,12 +18,17 @@ int main(int argc, char *argv[]) {
     QByteArray byteText = text.toLocal8Bit();
     QBitArray bitText = ConvertByteArrayToBitArray(byteText);
 
-    QByteArray convertbitText = ConvertBitArrayToByteArray(bitText);
-    QString convertText = QString::fromLocal8Bit(convertbitText);
-
+    // Encryption
     QBitArray bitCipher = Encryption(bitText, keys);
-    QByteArray byteCipher = ConvertBitArrayToByteArray(bitCipher);
-    QString ciphet = QString::fromLocal8Bit(byteCipher);
+
+    // remove unnecessary bits
+    QBitArray buffer(bitText.size());
+    for (int i = 0; i < bitText.size(); i++) {
+        buffer[i] = bitCipher[i];
+    }
+    QString cipher = QString::fromLocal8Bit(
+                ConvertBitArrayToByteArray(buffer)
+                );
 
     return a.exec();
 }
@@ -68,11 +74,13 @@ QByteArray ConvertBitArrayToByteArray(QBitArray bitArray) {
  * @param keyList - keys for decryption
  * @return - ciphertext
  */
-QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList) {
-   int sizeText = bitsText.size();
-
-   // add missing bits
-   if (sizeText % 64 != 0) {
+QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
+    int sizeText = bitsText.size();
+    // text add empty bits for block
+    QBitArray fullBitText;
+    int fullSize;
+    // add missing bits
+    if (sizeText % 64 != 0) {
        int newSize = sizeText + (64 - sizeText % 64);
        QBitArray buffer(newSize);
        // copy bits
@@ -84,8 +92,8 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList) {
            buffer[i] = 0;
        }
        buffer[newSize - 1] = 1;
-       bitsText = buffer;
-       sizeText = newSize;
+       fullBitText = buffer;
+       fullSize = newSize;
    }
 
    // generate 64-bits key
@@ -102,15 +110,15 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList) {
    }
 
    // encryption
-   QBitArray encryptionText(sizeText);
+   QBitArray encryptionText(fullSize);
    QBitArray block(64);
-   for (int i = 0; i < sizeText; i+=64) {
+   for (int i = 0; i < fullSize; i+=64) {
        // add key in list
-       keyList.append(bitKey);
+       keys.append(bitKey);
 
        // generate block
        for (int j = 0; j < block.size(); j++) {
-           block[i] = bitsText[i + j];
+           block[i] = fullBitText[i + j];
        }
 
        // encryption block
@@ -121,5 +129,38 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keyList) {
            encryptionText[i + j] = block[j];
        }
    }
+
    return encryptionText;
+}
+
+/**
+ * @brief Decoding
+ * @param bitCipher - raw data encrypting input text
+ * @param keys - keys to encryption
+ * @return deco
+ */
+QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys) {
+    QBitArray block(64); // block
+    QBitArray decoderText(bitCipher.size());
+    QBitArray key;
+    QListIterator<QBitArray> keysIter(keys);
+    QBitArray text(bitCipher.size());
+    // decoding
+    for (int i = 0; i < bitCipher.size(); i+=64) {
+
+        // get block
+        for (int j = 0; j < block.size(); j++) {
+            block[j] = bitCipher[i + j];
+        }
+        // get key
+        key = keysIter.next();
+
+        // xor
+        QBitArray decBlock = block ^ key;
+        // add block in decoding text
+        for (int j = 0; j < block.size(); i++) {
+            text[i + j] = decBlock[j];
+        }
+    }
+    return text;
 }
