@@ -13,10 +13,29 @@ int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
     QTextStream out(stdout);
     qsrand(QTime::currentTime().second());
-    QString text = "Test";
+    QString text = "T";
     QList<QBitArray> keys;
     QByteArray byteText = text.toLocal8Bit();
     QBitArray bitText = ConvertByteArrayToBitArray(byteText);
+
+    QBitArray testKey = QBitArray(bitText.size());
+    for (int i = 0; i < testKey.size(); i++) {
+        // generate 16 bit half key
+        int key = qrand() % 100;
+        if (key < 50)
+            testKey[i] = true;
+        else
+            testKey[i] = false;
+    }
+
+
+    QBitArray testCipher = bitText ^ testKey;
+
+    QBitArray testBitDecodeText = testCipher ^ testKey;
+
+    QString decText = QString::fromLocal8Bit(
+                ConvertBitArrayToByteArray(testBitDecodeText)
+                );
 
     // Encryption
     QBitArray bitCipher = Encryption(bitText, keys);
@@ -107,14 +126,10 @@ QBitArray Encryption(QBitArray bitsText, QList<QBitArray> &keys) {
    // generate 64-bits key
    QBitArray bitKey = QBitArray(64);
    int key;
-   for (int i = 0; i < 64; i+=16) {
+   for (int i = 0; i < 64; i++) {
        // generate 16 bit half key
        key = qrand() % 99;
-       QBitArray bitBuffer = ConvertByteArrayToBitArray(QByteArray::number(key));
-       // copy to key
-       for (int j = 0; j < 16; j++) {
-           bitKey[i + j] = bitBuffer[j];
-       }
+       bitKey[i] = key < 50 ? true : false;
    }
 
    // encryption
@@ -166,7 +181,7 @@ QBitArray Decoding(QBitArray bitCipher, QList<QBitArray> keys) {
         // xor
         QBitArray decBlock = block ^ key;
         // add block in decoding text
-        for (int j = 0; j < block.size(); i++) {
+        for (int j = 0; j < block.size(); j++) {
             text[i + j] = decBlock[j];
         }
     }
