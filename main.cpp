@@ -14,6 +14,11 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
     qsrand(QTime::currentTime().second());
 
+    char d, b;
+    d = 1;
+    b = 2;
+    char c = d ^ b;
+
     QString text = "T";
     QList<QBitArray> keys;
     QByteArray byteText = text.toLocal8Bit();
