@@ -23,7 +23,7 @@ MainWindow::~MainWindow()
  * @return - ciphertext
  */
 QByteArray Encryption(QByteArray bytesText, QList<QByteArray> &keys) {
-
+    keys.clear();
     int sizeText = bytesText.size();
     // add missing bits
     if (sizeText % 8 != 0) {
@@ -115,8 +115,16 @@ QByteArray Decoding(QByteArray bytesCipher, QList<QByteArray> keys) {
 
 void MainWindow::on_encryptButton_clicked()
 {
-    QString inputText = ui->inputText->toPlainText();
-    QList<QByteArray> keys;
-    QByteArray bytesEncryptingText = Encryption(inputText.toLocal8Bit(), keys);
-    ui->encryptText->setPlainText(QString::fromLocal8Bit(bytesEncryptingText));
+    _inputText = ui->inputText->toPlainText();
+    _cipher = Encryption(_inputText.toLocal8Bit(), _keys);
+    ui->encryptText->setPlainText(QString::fromLocal8Bit(_cipher));
+}
+
+
+void MainWindow::on_decryptButton_clicked()
+{
+    QByteArray decodeText = Decoding(_cipher, _keys);
+    QString text = QString::fromLocal8Bit(decodeText);
+    text = text.mid(0, _inputText.size());
+    ui->encryptText->setPlainText(text);
 }

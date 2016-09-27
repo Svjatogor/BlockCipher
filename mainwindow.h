@@ -18,8 +18,13 @@ public:
 private slots:
     void on_encryptButton_clicked();
 
+    void on_decryptButton_clicked();
+
 private:
     Ui::MainWindow *ui;
+    QString _inputText;
+    QByteArray _cipher;
+    QList<QByteArray> _keys;
 };
 
 #endif // MAINWINDOW_H
